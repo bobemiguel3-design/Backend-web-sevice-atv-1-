@@ -1,0 +1,155 @@
+package com.exemplo.futebol.model;
+
+public class Jogador {
+    private String nome;
+    private String posicao;
+    private int idade;
+
+    public Jogador() {}
+
+    public Jogador(String nome, String posicao, int idade) {
+        this.nome = nome;
+        this.posicao = posicao;
+        this.idade = idade;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getPosicao() {
+        return posicao;
+    }
+
+    public void setPosicao(String posicao) {
+        this.posicao = posicao;
+    }
+
+    public int getIdade() {
+        return idade;
+    }
+
+    public void setIdade(int idade) {
+        this.idade = idade;
+    }
+}
+✅ 2. TimeService.java
+java
+Copiar código
+package com.exemplo.futebol.service;
+
+import com.exemplo.futebol.model.Jogador;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+public class TimeService {
+
+    private final List<Jogador> jogadores = new ArrayList<>();
+
+    @PostConstruct
+    public void init() {
+        jogadores.add(new Jogador("João", "Goleiro", 28));
+        jogadores.add(new Jogador("Carlos", "Zagueiro", 30));
+        jogadores.add(new Jogador("Pedro", "Zagueiro", 27));
+        jogadores.add(new Jogador("Lucas", "Lateral Direito", 25));
+        jogadores.add(new Jogador("Marcos", "Lateral Esquerdo", 26));
+        jogadores.add(new Jogador("Rafael", "Volante", 29));
+        jogadores.add(new Jogador("Felipe", "Meia", 24));
+        jogadores.add(new Jogador("Bruno", "Meia", 23));
+        jogadores.add(new Jogador("Thiago", "Atacante", 22));
+        jogadores.add(new Jogador("André", "Atacante", 28));
+        jogadores.add(new Jogador("Daniel", "Centroavante", 31));
+        jogadores.add(new Jogador("Vitor", "Goleiro", 25));
+        jogadores.add(new Jogador("Henrique", "Zagueiro", 26));
+        jogadores.add(new Jogador("Diego", "Meia", 21));
+        jogadores.add(new Jogador("Eduardo", "Atacante", 27));
+        jogadores.add(new Jogador("Renan", "Volante", 28));
+    }
+
+    public List<Jogador> getTitulares() {
+        return jogadores.subList(0, 11);
+    }
+
+    public List<Jogador> getReservas() {
+        return jogadores.subList(11, jogadores.size());
+    }
+
+    public String substituirJogador(int posicao) {
+        if (posicao < 0 || posicao > 10) {
+            throw new IllegalArgumentException("Posição inválida. Deve estar entre 0 e 10.");
+        }
+
+        if (jogadores.size() <= 11) {
+            throw new IllegalStateException("Sem reservas disponíveis.");
+        }
+
+        Jogador reserva = jogadores.remove(11);
+        Jogador titular = jogadores.get(posicao);
+        jogadores.set(posicao, reserva);
+        jogadores.add(titular);
+
+        return titular.getNome() + " foi substituído por " + reserva.getNome();
+    }
+}
+✅ 3. TimeController.java
+java
+Copiar código
+package com.exemplo.futebol.controller;
+
+import com.exemplo.futebol.model.Jogador;
+import com.exemplo.futebol.service.TimeService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+public class TimeController {
+
+    @Autowired
+    private TimeService timeService;
+
+    @GetMapping("/principal")
+    public ResponseEntity<List<Jogador>> listarTitulares() {
+        return ResponseEntity.ok(timeService.getTitulares());
+    }
+
+    @GetMapping("/reservas")
+    public ResponseEntity<List<Jogador>> listarReservas() {
+        return ResponseEntity.ok(timeService.getReservas());
+    }
+
+    @PutMapping("/jogador/{posicao}")
+    public ResponseEntity<String> substituirJogador(@PathVariable int posicao) {
+        try {
+            String resultado = timeService.substituirJogador(posicao);
+            return ResponseEntity.ok(resultado);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+}
+✅ 4. FutebolApplication.java
+java
+Copiar código
+package com.exemplo.futebol;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class FutebolApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(FutebolApplication.class, args);
+    }
+}
